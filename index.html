@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cube Cutting Game</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Additional styles for new features */
+        .high-score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,255,255,0.7);
+            z-index: 10;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confetti-fall 5s ease-in-out infinite;
+            z-index: 1000;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .cable-animation {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 0;
+            background: linear-gradient(to bottom, #fff, #777);
+            z-index: 5;
+            animation: cable-drop 2s ease-out forwards;
+        }
+
+        @keyframes cable-drop {
+            0% {
+                height: 0;
+            }
+            100% {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Audio Elements -->
+    <audio id="cubeSliceSound" src="https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3" preload="auto"></audio>
+    <audio id="gameOverSound" src="https://assets.mixkit.co/active_storage/sfx/2032/2032-preview.mp3" preload="auto"></audio>
+    <audio id="highScoreSound" src="https://assets.mixkit.co/active_storage/sfx/1082/1082-preview.mp3" preload="auto"></audio>
+    <audio id="backgroundMusic" src="https://assets.mixkit.co/active_storage/sfx/958/958-preview.mp3" loop preload="auto"></audio>
+
+    <!-- High Score Display -->
+    <div class="high-score-display">High Score: <span id="highScoreValue">0</span></div>
+
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+        <div class="cube-bg"></div>
+    </div>
+
+    <!-- Game canvas -->
+    <canvas id="c"></canvas>
+
+    <!-- Gameplay HUD -->
+    <div class="hud">
+        <div class="hud__score">
+            <div class="score-lbl glow-text"></div>
+            <div class="cube-count-lbl pulse-text"></div>
+        </div>
+        <div class="pause-btn"><div class="btn-hover-effect"></div></div>
+        <div class="slowmo">
+            <div class="slowmo__bar"></div>
+        </div>
+    </div>
+
+    <!-- Congratulations Overlay -->
+    <div class="congrats-overlay">
+        <div class="congrats-content">
+            <div class="fireworks">
+                <div class="firework"></div>
+                <div class="firework"></div>
+                <div class="firework"></div>
+            </div>
+            <h1 class="congrats-title shine-text">Congratulations!</h1>
+            <p class="congrats-text typewriter">New High Score!</p>
+            <div class="congrats-score bounce-text"></div>
+            <button type="button" class="continue-btn">CONTINUE</button>
+        </div>
+    </div>
+
+    <!-- Menu System -->
+    <div class="menus">
+        <div class="menu menu--main">
+            <h1 class="game-title">MENJA</h1>
+            <div class="menu-buttons">
+                <button type="button" class="play-normal-btn glowing-btn">PLAY GAME</button>
+                <button type="button" class="play-casual-btn glowing-btn">CASUAL MODE</button>
+            </div>
+        </div>
+        <div class="menu menu--pause">
+            <h1 class="pause-title">Paused</h1>
+            <div class="menu-buttons">
+                <button type="button" class="resume-btn glowing-btn">RESUME GAME</button>
+                <button type="button" class="menu-btn--pause glowing-btn">MAIN MENU</button>
+            </div>
+        </div>
+        <div class="menu menu--score">
+            <h1 class="score-title">Game Over</h1>
+            <h2 class="fade-in-text">Your Score:</h2>
+            <div class="final-score-lbl glow-text"></div>
+            <div class="high-score-lbl fade-in-text"></div>
+            <div class="menu-buttons">
+                <button type="button" class="play-again-btn glowing-btn">PLAY AGAIN</button>
+                <button type="button" class="menu-btn--score glowing-btn">MAIN MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            Made with <span class="heart">❤️</span> by <a href="https://jijanurrahman.netlify.app/" target="_blank" class="author-link">Jijanur Rahman</a>
+        </div>
+    </footer>
+
+    <script src="script.js" defer></script>
+    <script>
+        // Wait for the window to load completely (including assets)
+        window.addEventListener('load', function() {
+            console.log("Game enhancement code loaded");
+            
+            // Sound elements
+            const cubeSliceSound = document.getElementById('cubeSliceSound');
+            const gameOverSound = document.getElementById('gameOverSound');
+            const highScoreSound = document.getElementById('highScoreSound');
+            const backgroundMusic = document.getElementById('backgroundMusic');
+            
+            // Use the existing high score system
+            const highScoreKey = '__menja__highScore';
+            const getHighScore = () => {
+                const raw = localStorage.getItem(highScoreKey);
+                return raw ? parseInt(raw, 10) : 0;
+            };
+            
+            // Display current high score
+            let currentHighScore = getHighScore();
+            document.getElementById('highScoreValue').textContent = currentHighScore;
+            console.log("Loaded high score:", currentHighScore);
+            
+            // Function to play a sound safely
+            function playSound(audioElement) {
+                if (audioElement) {
+                    // Reset the audio to beginning
+                    audioElement.currentTime = 0;
+                    
+                    // Set volume
+                    audioElement.volume = 0.3;
+                    
+                    // Play with error handling
+                    const playPromise = audioElement.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("Audio play error:", error);
+                        });
+                    }
+                }
+            }
+            
+            // Create confetti animation
+            function createConfetti() {
+                console.log("Creating confetti");
+                const confettiCount = 100;
+                
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    
+                    // Random positions and colors
+                    const left = Math.random() * 100;
+                    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    confetti.style.left = left + 'vw';
+                    confetti.style.backgroundColor = color;
+                    confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                    confetti.style.animationDelay = (Math.random() * 2) + 's';
+                    
+                    document.body.appendChild(confetti);
+                    
+                    // Remove confetti after animation
+                    setTimeout(() => {
+                        if (document.body.contains(confetti)) {
+                            document.body.removeChild(confetti);
+                        }
+                    }, 5000);
+                }
+            }
+            
+            // Create cable animation
+            function createCableAnimation() {
+                console.log("Creating cable animation");
+                const cable = document.createElement('div');
+                cable.className = 'cable-animation';
+                document.body.appendChild(cable);
+                
+                // Remove cable after animation
+                setTimeout(() => {
+                    if (document.body.contains(cable)) {
+                        document.body.removeChild(cable);
+                    }
+                }, 3000);
+            }
+            
+            // Function to celebrate high score
+            function celebrateHighScore(score) {
+                console.log("Celebrating high score:", score);
+                
+                // Show congratulations overlay
+                const congratsOverlay = document.querySelector('.congrats-overlay');
+                const congratsScore = document.querySelector('.congrats-score');
+                congratsScore.textContent = score;
+                congratsOverlay.style.display = 'flex';
+                
+                // Play high score sound
+                playSound(highScoreSound);
+                
+                // Create celebration effects
+                createConfetti();
+                createCableAnimation();
+            }
+            
+            // Listen for cube slicing events (clicks/touches on canvas)
+            const canvas = document.getElementById('c');
+            
+            function handleInteraction() {
+                playSound(cubeSliceSound);
+            }
+            
+            canvas.addEventListener('mousedown', handleInteraction);
+            canvas.addEventListener('touchstart', handleInteraction);
+            
+            // Modify original game controls to include our sound functionality
+            // Play buttons
+            const playButtons = document.querySelectorAll('.play-normal-btn, .play-casual-btn');
+            playButtons.forEach(btn => {
+                const originalClick = btn.onclick;
+                
+                btn.addEventListener('click', function(e) {
+                    // Start background music
+                    backgroundMusic.volume = 0.2;
+                    backgroundMusic.play().catch(e => console.log("Music play error:", e));
+                });
+            });
+            
+            // Pause button
+            const pauseBtn = document.querySelector('.pause-btn');
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', function() {
+                    backgroundMusic.pause();
+                });
+            }
+            
+            // Resume button
+            const resumeBtn = document.querySelector('.resume-btn');
+            if (resumeBtn) {
+                resumeBtn.addEventListener('click', function() {
+                    backgroundMusic.play().catch(e => console.log("Music resume error:", e));
+                });
+            }
+            
+            // Main menu buttons
+            const menuButtons = document.querySelectorAll('.menu-btn--pause, .menu-btn--score');
+            menuButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    backgroundMusic.pause();
+                });
+            });
+            
+            // Continue button for high score celebration
+            const continueBtn = document.querySelector('.continue-btn');
+            if (continueBtn) {
+                continueBtn.addEventListener('click', function() {
+                    document.querySelector('.congrats-overlay').style.display = 'none';
+                });
+            }
+            
+            // Detect game state changes to handle end-game logic
+            function checkGameState() {
+                const scoreMenu = document.querySelector('.menu--score');
+                if (scoreMenu && window.getComputedStyle(scoreMenu).opacity === '1') {
+                    // Game is over - get the score
+                    setTimeout(() => {
+                        const finalScore = document.querySelector('.final-score-lbl');
+                        if (finalScore) {
+                            const scoreText = finalScore.textContent;
+                            const score = parseInt(scoreText.replace(/\D/g, ''));
+                            
+                            console.log("Game over with score:", score);
+                            
+                            // Play game over sound
+                            playSound(gameOverSound);
+                            
+                            // Check for high score
+                            const highScore = getHighScore();
+                            if (score > highScore) {
+                                document.getElementById('highScoreValue').textContent = score;
+                                
+                                // Celebrate after a short delay
+                                setTimeout(() => {
+                                    celebrateHighScore(score);
+                                }, 1000);
+                            }
+                        }
+                    }, 500);
+                }
+            }
+            
+            // Check if isNewHighScore function exists and hook into it
+            const originalScoreFunctions = {
+                setHighScore: window.setHighScore,
+                isNewHighScore: window.isNewHighScore
+            };
+            
+            // Hook into high score system if functions are available
+            if (typeof window.setHighScore === 'function') {
+                window.setHighScore = function(score) {
+                    // Call original function
+                    if (originalScoreFunctions.setHighScore) {
+                        originalScoreFunctions.setHighScore(score);
+                    }
+                    
+                    // Update our display
+                    document.getElementById('highScoreValue').textContent = score;
+                };
+            }
+            
+            // Use MutationObserver to detect when game state changes
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function() {
+                    checkGameState();
+                });
+            });
+            
+            // Start observing all menus for style changes
+            const menus = document.querySelectorAll('.menu');
+            menus.forEach(menu => {
+                observer.observe(menu, { attributes: true, attributeFilter: ['style'] });
+            });
+            
+            // Also observe score display for updates during gameplay
+            const scoreLabel = document.querySelector('.score-lbl');
+            if (scoreLabel) {
+                const scoreObserver = new MutationObserver(function() {
+                    // Update high score display (in case localStorage changed)
+                    document.getElementById('highScoreValue').textContent = getHighScore();
+                });
+                
+                scoreObserver.observe(scoreLabel, { childList: true, characterData: true, subtree: true });
+            }
+            
+            // Check for high score display on game end
+            const highScoreLabel = document.querySelector('.high-score-lbl');
+            if (highScoreLabel) {
+                const highScoreObserver = new MutationObserver(function() {
+                    // This triggers when the high score label updates
+                    const highScoreText = highScoreLabel.textContent;
+                    
+                    // If it contains "HIGH SCORE", this might be a new high score
+                    if (highScoreText.includes('HIGH SCORE')) {
+                        const scoreLabel = document.querySelector('.final-score-lbl');
+                        if (scoreLabel) {
+                            const score = parseInt(scoreLabel.textContent.replace(/\D/g, ''));
+                            
+                            // Celebrate after a short delay
+                            setTimeout(() => {
+                                celebrateHighScore(score);
+                            }, 1000);
+                        }
+                    }
+                });
+                
+                highScoreObserver.observe(highScoreLabel, { childList: true, characterData: true, subtree: true });
+            }
+            
+            console.log("Game enhancement setup complete");
+        });
+    </script>
+</body>
+</html>
