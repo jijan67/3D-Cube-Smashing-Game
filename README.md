@@ -3,7 +3,7 @@
 An interactive web-based game that challenges players to destroy colorful 3D cubes in a dynamic environment. Built with vanilla JavaScript and HTML5 Canvas.
 
 ---
-## [🎮 Play Online ](https://jijan67.github.io/3D-Cube-Smashing-Game/)
+## [🎮 Play Online ](https://jijanurrahman.github.io/3D-Cube-Smashing-Game/)
 ---
 [![Download](https://img.shields.io/badge/Download-APK-blue.svg?style=flat&logo=android)](https://drive.google.com/file/d/1f5nzX1mbM3UjRajZcg3WB88q-cLwfmCh/view?usp=sharing)
 ---
